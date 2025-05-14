@@ -14,7 +14,7 @@
 #     db.session.commit()
 
 #     # יצירת סניפים אם לא קיימים
-#     branches = ['תל אביב', 'ירושלים', 'קיסריה', 'יוקנעם', 'באר שבע']
+#     branches = ['תל אביב', 'ירושלים', 'קיסריה', 'יקנעם', 'באר שבע']
 #     for city_name in branches:
 #         existing_branch = Branch.query.filter_by(city=city_name).first()
 #         if not existing_branch:
@@ -56,16 +56,4 @@
 #         print(f"אימייל: {user.email}")
 #         print(f"סניף: {branch.city}")
 #         print(f"סיסמה: 1234 (הוצפנה)")
-from app import app
-from extensions import db
-from models import Branch
-
-with app.app_context():
-    branch = Branch.query.filter_by(city="יוקנעם").first()
-    if branch:
-        branch.city = "יקנעם"
-        db.session.commit()
-        print("✅ עודכן: שם הסניף שונה ל-יקנעם")
-    else:
-        print("❌ לא נמצא סניף בשם 'יוקנעם'")
 
