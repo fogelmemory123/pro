@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>התחברות למערכת</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #74ebd5, #acb6e5);
+            direction: rtl;
+        }
+        .container {
+            background: #ffffff;
+            padding: 40px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 25px;
+            color: #333;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        input {
+            width: calc(100% - 20px);
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            background: #f9f9f9;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #74ebd5;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #74ebd5;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 15px;
+        }
+        button:hover {
+            background: #acb6e5;
+        }
+        p {
+            margin-top: 20px;
+            color: #333;
+            font-size: 14px;
+        }
+        a {
+            color: #74ebd5;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        a:hover {
+            color: #acb6e5;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>התחברות למערכת</h1>
+    <input type="email" id="email" placeholder="אימייל" required>
+    <input type="password" id="password" placeholder="סיסמה" required>
+    <button onclick="loginUser()">התחבר</button>
+    <p>אין לך חשבון? <a href="register.html">הירשם כאן</a></p>
+</div>
+
+<script>
+    async function loginUser() {
+        const data = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        };
+
+        try {
+            const response = await fetch('http://localhost:5000/shifts/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert('שגיאה בהתחברות: ' + (result.message || 'נסה שוב.'));
+                return;
+            }
+
+            localStorage.setItem('token', result.access_token);
+            alert('התחברת בהצלחה!');
+            // הפנייה לעמוד הבית או אחר:
+            window.location.href = 'index.html';
+        } catch (error) {
+            console.error('Error logging in:', error);
+            alert('שגיאה כללית: לא ניתן להתחבר לשרת.');
+        }
+    }
+</script>
+</body>
+</html>

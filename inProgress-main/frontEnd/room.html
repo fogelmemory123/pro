@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>הזמנת חדרים לפי תאריך</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      direction: rtl;
+      text-align: center;
+      background-color: #f0f8ff;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin: 20px 0;
+    }
+
+    .room {
+      border-radius: 16px;
+      background-color: #ffffff;
+      padding: 20px;
+      margin: 10px;
+      display: inline-block;
+      width: 320px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      vertical-align: top;
+    }
+
+    .slots {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .time-slot {
+      width: 80px;
+      padding: 10px;
+      border: none;
+      border-radius: 12px;
+      background-color: #27ae60;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
+      white-space: pre-line;
+    }
+
+    .time-slot:hover {
+      background-color: #2ecc71;
+    }
+
+    .reserved {
+      background-color: #3498db !important;
+      opacity: 0.9;
+    }
+
+    .date-nav {
+      margin: 20px 0;
+    }
+
+    .date-nav button {
+      margin: 0 6px;
+      padding: 5px 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: none;
+      background-color: #2980b9;
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .date-nav span {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand mx-3" href="#">
+        <img src="enter.jpg" width="50" height="50" alt="Logo">
+      </a>
+
+      <ul class="navbar-nav d-none d-sm-flex">
+        <li class="nav-item">
+          <span class="nav-link disabled text-white" id="userNameName"></span>
+        </li>
+        <li class="nav-item">
+          <span class="nav-link disabled text-white" id="userBranch"></span>
+        </li>
+        <li class="nav-item">
+          <span class="nav-link disabled text-white" id="userRole"></span>
+        </li>
+      </ul>
+
+      <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="collapsibleNavbar">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item d-block d-sm-none">
+            <span class="nav-link disabled text-white" id="userNameMobile"></span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="logout()">יציאה</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <h1>הזמנת חדרים בין 09:00 ל-15:00</h1>
+
+  <div class="date-nav">
+    <button onclick="changeDate(-1)">️ יום קודם</button>
+    <span id="date-display"></span>
+    <button onclick="changeDate(1)">יום הבא ️</button>
+  </div>
+
+  <div id="rooms-container"></div>
+  <br><br><br>
+  <div class="text-center mb-4">
+    <div class="btn-group" role="group" aria-label="קישורים נוספים">
+      <a href="room.html" class="btn btn-success">הזמנת חדרים</a>
+      <a href="calender.html" class="btn btn-primary">לוח אירועים</a>
+      <a href="index.html" class="btn btn-warning">מילוי משמרות</a>
+    </div>
+  </div>
+  <script>
+    const apiBase = 'http://localhost:5000';
+    const hours = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
+    const rooms = ['ברוש', 'אורן', 'דקל'];
+    let currentDate = new Date();
+
+    function formatDate(date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    function updateDateDisplay() {
+      const display = document.getElementById('date-display');
+      display.textContent = currentDate.toLocaleDateString('he-IL', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+
+    function changeDate(days) {
+      currentDate.setDate(currentDate.getDate() + days);
+      renderRooms();
+    }
+
+    async function fetchReservations() {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiBase}/rooms/all`, {
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      });
+      const data = await res.json();
+      return data.data || [];
+    }
+
+    async function reserveHour(dateStr, roomName, hour, btn) {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiBase}/rooms/reserve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ date: dateStr, room_name: roomName, hour })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        renderRooms();
+      } else {
+        alert(data.message || 'שגיאה בשמירה');
+      }
+    }
+
+    async function cancelReservation(dateStr, roomName, hour, btn) {
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch(`${apiBase}/rooms/cancel`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ date: dateStr, room_name: roomName, hour })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          console.log("✅ בוצע ביטול בהצלחה");
+          await renderRooms();
+        } else {
+          console.warn("❌ שגיאה בביטול:", data.message);
+          alert(data.message || 'שגיאה בביטול ההזמנה');
+        }
+      } catch (error) {
+        console.error('🚨 שגיאה בתקשורת עם השרת:', error);
+        alert('שגיאת תקשורת עם השרת');
+      }
+    }
+
+    function getUserIdFromToken() {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payloadBase64));
+        return decodedPayload.sub || decodedPayload.identity;
+      } catch (err) {
+        console.error("שגיאה בפענוח ה-token", err);
+        return null;
+      }
+    }
+
+    async function renderRooms() {
+      const dateStr = formatDate(currentDate);
+      updateDateDisplay();
+
+      const container = document.getElementById('rooms-container');
+      container.innerHTML = '';
+
+      const allReservations = await fetchReservations();
+      const filteredReservations = allReservations.filter(r => r.date === dateStr);
+      const currentUserId = getUserIdFromToken();
+
+      rooms.forEach((roomName) => {
+        const div = document.createElement('div');
+        div.className = 'room';
+        div.innerHTML = `<h2>${roomName}</h2><div class="slots"></div>`;
+        container.appendChild(div);
+
+        const slotsDiv = div.querySelector('.slots');
+        hours.forEach(hour => {
+          const reserved = filteredReservations.find(r => r.room_name === roomName && r.hour === hour);
+          const btn = document.createElement('button');
+          btn.className = 'time-slot';
+
+          if (reserved) {
+            btn.classList.add('reserved');
+            btn.textContent = `${hour}\n(${reserved.user})`;
+
+            if (currentUserId && reserved.user_id === currentUserId) {
+              btn.style.backgroundColor = '#e74c3c';
+              btn.disabled = false;
+              btn.onclick = () => cancelReservation(dateStr, roomName, hour, btn);
+            } else {
+              btn.disabled = true;
+            }
+          } else {
+            btn.textContent = hour;
+            btn.onclick = () => reserveHour(dateStr, roomName, hour, btn);
+          }
+
+          slotsDiv.appendChild(btn);
+        });
+      });
+    }
+
+    async function loadUserProfile() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const res = await fetch(`${apiBase}/rooms/profile`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const { first_name, last_name, branch, role } = data;
+
+        document.getElementById("userNameName").textContent = `${first_name} ${last_name}`;
+        document.getElementById("userNameMobile").textContent = `${first_name} ${last_name}`;
+        document.getElementById("userBranch").textContent = `סניף: ${branch.city}`;
+        document.getElementById("userRole").textContent = `תפקיד: ${role}`;
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    loadUserProfile();
+    renderRooms();
+  </script>
+</body>
+</html>

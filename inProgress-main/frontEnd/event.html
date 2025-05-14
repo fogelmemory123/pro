@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>הרשמה לאירוע</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(to right, #e3f2fd, #fff);
+      direction: rtl;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 800px;
+      background: #fff;
+      padding: 40px 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .event-info p {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary {
+      padding: 12px 24px;
+      font-size: 1.1rem;
+      border-radius: 30px;
+    }
+
+    #registerSuccess, #registerError {
+      font-weight: bold;
+      margin-top: 15px;
+      display: none;
+    }
+
+    #registerSuccess {
+      color: #28a745;
+    }
+
+    #registerError {
+      color: #dc3545;
+    }
+
+    .list-group-item {
+      font-size: 1rem;
+    }
+
+    .event-title {
+      color: #0d6efd;
+      font-weight: bold;
+      font-size: 2rem;
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="text-center event-title">פרטי האירוע</div>
+
+    <div class="event-info">
+      <p><strong>📅 תאריך:</strong> <span id="eventDate"></span></p>
+      <p><strong>📝 תיאור:</strong> <span id="eventDescription"></span></p>
+      <p><strong>📍 סניף:</strong> <span id="branchCity"></span></p>
+      <p id="lecturerLine" style="display:none;"><strong>🎤 מרצה:</strong> <span id="lecturerName"></span></p>
+    </div>
+
+    <div class="text-center">
+      <button onclick="registerToEvent()" class="btn btn-primary">הירשם לאירוע</button>
+      <p id="registerSuccess">✅ נרשמת בהצלחה לאירוע!</p>
+      <p id="registerError">❌ שגיאה בהרשמה. נסה שוב.</p>
+    </div>
+
+    <hr class="my-5">
+
+    <div class="section-title text-center">👥 רשימת משתתפים</div>
+    <ul id="participantList" class="list-group"></ul>
+  </div>
+
+  <script>
+    const apiUrl = "http://localhost:5000";
+    const participantApi = `${apiUrl}/api/participants`;
+
+    function getEventIdFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("id");
+    }
+
+    async function loadEventDetails() {
+      const id = getEventIdFromURL();
+      if (!id) return;
+
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiUrl}/calendar/events`, {
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        });
+
+        const allEvents = await res.json();
+        const event = allEvents.find(e => e.id == id);
+        if (!event) throw new Error("אירוע לא נמצא");
+
+        document.getElementById("eventDate").textContent = event.date;
+        document.getElementById("eventDescription").textContent = event.event_description;
+        document.getElementById("branchCity").textContent = event.branch_city;
+
+        if (event.lecturer_name) {
+          document.getElementById("lecturerName").textContent = event.lecturer_name;
+          document.getElementById("lecturerLine").style.display = 'block';
+        }
+
+        loadParticipants(id);
+      } catch (err) {
+        alert("שגיאה בטעינת האירוע");
+        console.error(err);
+      }
+    }
+
+    async function registerToEvent() {
+  const token = localStorage.getItem('token');
+  const eventId = getEventIdFromURL();
+
+  try {
+    const res = await fetch(`${participantApi}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify({ event_id: eventId })
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      document.getElementById("registerSuccess").textContent = result.message || "נרשמת בהצלחה לאירוע!";
+      document.getElementById("registerSuccess").style.display = 'block';
+      document.getElementById("registerError").style.display = 'none';
+      
+      // ✅ טוען מחדש את רשימת המשתתפים
+      loadParticipants(eventId);
+    } else {
+      document.getElementById("registerSuccess").style.display = 'none';
+      document.getElementById("registerError").textContent = result.message || "שגיאה בהרשמה";
+      document.getElementById("registerError").style.display = 'block';
+    }
+  } catch (err) {
+    console.error("שגיאה בהרשמה:", err);
+    document.getElementById("registerSuccess").style.display = 'none';
+    document.getElementById("registerError").textContent = "שגיאה בהרשמה. נסה שוב.";
+    document.getElementById("registerError").style.display = 'block';
+  }
+}
+
+
+    async function loadParticipants(eventId) {
+      try {
+        const res = await fetch(`${participantApi}/public/event/${eventId}/participants`);
+        const list = document.getElementById("participantList");
+        list.innerHTML = "";
+
+        if (!res.ok) {
+          const errData = await res.json();
+          const li = document.createElement("li");
+          li.className = "list-group-item text-danger";
+          li.textContent = errData.message || "שגיאה בצפייה במשתתפים";
+          list.appendChild(li);
+          return;
+        }
+
+        const participants = await res.json();
+        if (participants.length === 0) {
+          const li = document.createElement("li");
+          li.className = "list-group-item text-muted";
+          li.textContent = "עדיין לא נרשמו משתתפים לאירוע הזה.";
+          list.appendChild(li);
+        } else {
+          participants.forEach(p => {
+            const li = document.createElement("li");
+            li.className = "list-group-item";
+            li.textContent = p.name;
+            list.appendChild(li);
+          });
+        }
+      } catch (err) {
+        console.error("שגיאה בטעינת משתתפים:", err);
+        const list = document.getElementById("participantList");
+        list.innerHTML = `<li class="list-group-item text-danger">שגיאה בטעינת משתתפים</li>`;
+      }
+    }
+
+    loadEventDetails();
+  </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>לוח שנה - חגים ואירועים</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- סקריפט של Bootstrap להפעלת תפריט בורגר -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+      direction: rtl;
+      padding-bottom: 40px;
+    }
+
+    nav.navbar {
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .calendar-nav, .filter-container {
+      margin: 20px auto;
+      text-align: center;
+    }
+
+    .calendar-nav button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 0 10px;
+      background-color: #198754;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      transition: all 0.3s ease;
+    }
+
+    .calendar-nav button:hover {
+      background-color: #145c32;
+      transform: scale(1.05);
+    }
+
+    .event-box {
+      margin-top: 5px;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .holiday {
+      background-color: #ff9800;
+      color: white;
+      margin-top: 5px;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .filter-container select {
+      min-width: 200px;
+      border-radius: 25px;
+      padding: 5px 15px;
+      font-size: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .branch-legend {
+      text-align: center;
+      margin-top: -10px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      font-size: 0.9rem;
+      color: #444;
+    }
+
+    .branch-legend span {
+      display: inline-block;
+      margin: 0 10px;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 15px 10px;
+      border: 1px solid #dee2e6;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #198754;
+      color: white;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .calendar-nav button {
+        font-size: 14px;
+        padding: 8px 12px;
+        margin: 5px 4px;
+      }
+
+      th, td {
+        font-size: 0.85rem;
+        padding: 8px;
+      }
+
+      .holiday, .event-box {
+        font-size: 0.75rem;
+      }
+
+      .branch-legend {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- המשך התוכן ללא שינוי -->
+    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand mx-3" href="#">
+                <img src="enter.jpg" width="50" height="50" alt="Logo">
+              </a>
+          <!-- פרטי משתמש - בצד ימין -->
+          <ul class="navbar-nav d-none d-sm-flex">
+            <li class="nav-item">
+              <span class="nav-link disabled text-white" id="userNameName"></span>
+            </li>
+            <li class="nav-item">
+              <span class="nav-link disabled text-white" id="userBranch"></span>
+            </li>
+            <li class="nav-item">
+              <span class="nav-link disabled text-white" id="userRole"></span>
+            </li>
+          </ul>
+      
+       
+          
+      
+          <!-- כפתור בורגר (למסכים קטנים) -->
+          <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+      
+          <!-- תפריט ניווט שמאלי -->
+          <div class="collapse navbar-collapse" id="collapsibleNavbar">
+            <ul class="navbar-nav ms-auto">
+      
+              <!-- פרטי משתמש במסך קטן -->
+              <li class="nav-item d-block d-sm-none">
+                <span class="nav-link disabled text-white" id="userNameMobile"></span>
+              </li>
+         <!-- לוגו באמצע -->
+         
+              <!-- כפתור יציאה -->
+              <li class="nav-item">
+                <a class="nav-link" href="#" onclick="logout()">יציאה</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+      <div class="text-center my-3">
+        <label for="branchFilter">בחר סניף:</label>
+        <select id="branchFilter" class="form-select w-auto d-inline-block mx-2" onchange="updateCalendar()">
+          <option value="">כל הסניפים</option>
+        </select>
+      </div>
+      <div class="branch-legend">
+        <span style="color: #007bff">🟦 תל אביב</span>
+        <span style="color: #dc3545">🟥 באר שבע</span>
+        <span style="color: #28a745">🟩 ירושלים</span>
+        <span style="color: #ffc107">🟨 יקנעם</span>
+        <span style="color: #6f42c1">🟪 קיסריה</span>
+      </div>
+   
+
+  <div class="calendar-nav">
+    <button onclick="changeMonth(-1)">חודש קודם</button>
+    <span id="current-month" class="fw-bold"></span>
+    <button onclick="changeMonth(1)">חודש הבא</button>
+  </div>
+
+  <div class="table-responsive px-2">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>א'</th><th>ב'</th><th>ג'</th><th>ד'</th><th>ה'</th><th>ו'</th><th>ש'</th>
+        </tr>
+      </thead>
+      <tbody id="calendar-body"></tbody>
+    </table>
+  </div>
+  <div class="text-center mb-4">
+    <div class="btn-group" role="group" aria-label="קישורים נוספים">
+      <a href="room.html" class="btn btn-success">הזמנת חדרים</a>
+      <a href="calender.html" class="btn btn-primary">לוח אירועים</a>
+      <a href="index.html" class="btn btn-warning">מילוי משמרות</a>
+    </div>
+  </div>
+  <script>
+    const monthNames = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+
+    function changeMonth(offset) {
+      currentMonth += offset;
+      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+      else if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      updateCalendar();
+    }
+
+    async function updateCalendar() {
+  const token = localStorage.getItem('token');
+  const tbody = document.getElementById('calendar-body');
+  tbody.innerHTML = '';
+
+  const selectedBranch = document.getElementById('branchFilter').value;
+  const monthDisplay = document.getElementById('current-month');
+  monthDisplay.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+  // שליפת חגים
+  let holidays = {};
+  try {
+    const res = await fetch(`https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&year=${currentYear}&month=${currentMonth + 1}&lg=h`);
+    const data = await res.json();
+    (data.items || []).forEach(holiday => {
+      const day = new Date(holiday.date).getDate();
+      if (!holidays[day]) holidays[day] = [];
+      holidays[day].push(holiday.title);
+    });
+  } catch (err) {
+    console.error("שגיאה בשליפת חגים", err);
+  }
+
+  // שליפת אירועים עם סינון לפי סניף
+  let events = [];
+  try {
+    const query = selectedBranch ? `?branch_id=${selectedBranch}` : '';
+    const res = await fetch(`http://localhost:5000/calendar/events${query}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    events = data.filter(e => {
+      const [y, m] = e.date.split('-');
+      return parseInt(y) === currentYear && parseInt(m) === currentMonth + 1;
+    });
+  } catch (err) {
+    console.error("שגיאה בשליפת אירועים", err);
+  }
+
+  // יצירת טבלת ימים
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  let row = document.createElement('tr');
+  for (let i = 0; i < firstDay; i++) row.appendChild(document.createElement('td'));
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    if (row.children.length === 7) {
+      tbody.appendChild(row);
+      row = document.createElement('tr');
+    }
+
+    const cell = document.createElement('td');
+    cell.innerHTML = `<div>${day}</div>`;
+
+    if (holidays[day]) {
+      holidays[day].forEach(title => {
+        const div = document.createElement('div');
+        div.className = 'holiday';
+        div.textContent = title;
+        cell.appendChild(div);
+      });
+    }
+
+    events.filter(e => parseInt(e.date.split('-')[2]) === day).forEach(ev => {
+      const div = document.createElement('div');
+      div.className = 'event-box';
+      const city = ev.branch_city?.trim();
+
+      if (city === 'תל אביב') div.style.backgroundColor = '#007bff';
+      else if (city === 'באר שבע') div.style.backgroundColor = '#dc3545';
+      else if (city === 'ירושלים') div.style.backgroundColor = '#28a745';
+      else if (city === 'יקנעם') {
+        div.style.backgroundColor = '#ffc107';
+        div.style.color = 'black';
+      } else if (city === 'קיסריה') div.style.backgroundColor = '#6f42c1';
+      else div.style.backgroundColor = '#6c757d';
+
+      div.innerHTML = `<a href="event.html?id=${ev.id}" class="text-white text-decoration-none">${ev.event_description}${ev.lecturer_name ? ` (${ev.lecturer_name})` : ''}</a>`;
+      cell.appendChild(div);
+    });
+
+    row.appendChild(cell);
+  }
+
+  while (row.children.length < 7) row.appendChild(document.createElement('td'));
+  tbody.appendChild(row);
+}
+
+    async function loadUserProfile() {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('http://localhost:5000/calendar/profile', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const { first_name, last_name, branch_city, role } = data;
+
+      // הצגת הפרטים בדף
+      document.getElementById("userNameName").textContent = `${first_name} ${last_name}`;
+      document.getElementById("userNameMobile").textContent = `${first_name} ${last_name}`;
+      document.getElementById("userBranch").textContent = `סניף: ${branch_city}`;
+      document.getElementById("userRole").textContent = `תפקיד: ${role}`;
+    }
+  } catch (err) {
+    console.error("שגיאה בפרופיל המשתמש:", err);
+  }
+}
+async function loadBranches() {
+  const token = localStorage.getItem('token');
+  const select = document.getElementById('branchFilter');
+  if (!select) return;
+
+  try {
+    const res = await fetch('http://localhost:5000/calendar/branches', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    if (!res.ok) throw new Error("שגיאה בשרת");
+
+    const branches = await res.json();
+
+    // שמירת ערך נוכחי אם יש
+    const selectedBefore = select.value;
+
+    // איפוס ובניית הרשימה
+    select.innerHTML = `<option value="">כל הסניפים</option>`;
+    branches.forEach(branch => {
+      const option = document.createElement('option');
+      option.value = branch.id;
+      option.textContent = branch.city;
+      select.appendChild(option);
+    });
+
+    // ניסיון להחזיר את הבחירה הקודמת אם קיימת
+    if (selectedBefore) {
+      select.value = selectedBefore;
+    }
+
+  } catch (err) {
+    console.error("שגיאה בטעינת הסניפים:", err);
+  }
+}
+
+
+loadUserProfile();
+loadBranches();
+    updateCalendar();
+  </script>
+</body>
+</html>
